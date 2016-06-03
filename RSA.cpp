@@ -47,19 +47,24 @@ int main(void) {
    std::cin.getline(inmsg, MAX_STR_LEN);
    std:: cout << inmsg << std::endl;
 
-   long int n = p*q;
-   long int t = (p-1)*(q-1);
-   
+   //Generate public and private keys from p and q
    publickey(p,q,&pube,&pubmod);
    std::cout << "public key: " << pube << ", " << pubmod << std::endl;
    privatekey(p,q,pube,&prive,&privmod);
    std::cout << "private key: " << prive << ", " << privmod << std::endl;
 
+   //Encrypt, then decrypt the message
    std::cout << "Original text: " << inmsg << std::endl;
+       //Convert to long ints
    char2long(inmsg, inmsg_l);
+
+       //Encrypt
    encrypt(inmsg_l, pube, pubmod, outmsg_l);
    long2char(outmsg_l, outmsg);
    std::cout << "Encrypted text: " << outmsg << std::endl;
+
+
+       //Decrypt
    decrypt(outmsg_l, prive, privmod, decrmsg_l);
    long2char(decrmsg_l, decrmsg);
    std::cout << "Decrypted text: " << decrmsg << std::endl;
@@ -75,21 +80,27 @@ long int prime(long int p)
 }
 
 int publickey(long int p, long int q, long int *exp, long int *mod)
+//Generates a public key pair
+//The modulus is given by (p-1)*(q-1)
+//The exponent is any integer coprime of the modulus
 {
 
    *mod = (p-1)*(q-1);
-   //Find a coprime 
-   *exp = ((int)sqrt(*mod)+1293)%2541617;
+   //Choose an integer near sqrt(mod)
+   *exp = (int)sqrt(*mod);
+   //Find a coprime near that number 
    while (1!=gcd(*exp,*mod))  
    {
       (*exp)++;
    }
-   *exp = 7;
    *mod = p*q;
    return 0;
 }
 
 int privatekey(long int p, long int q, long int pubexp, long int *exp, long int *mod)
+//Generates a private key pair
+//The modulus is given by (p-1)*(q-1)
+//The exponent is the number, n, which satisfies (n * pubexp) % mod = 1
 {
    *mod = (p-1)*(q-1);
    *exp = 1;
@@ -97,35 +108,41 @@ int privatekey(long int p, long int q, long int pubexp, long int *exp, long int 
    while(1!=tmp%*mod)
    {
       tmp+=pubexp;
-      tmp%=*mod;
+      tmp%=*mod; //We can exploit the fact that (a*b)%c = ((a%c)*b)%c 
+                 //   to keep the numbers from getting too large
       (*exp)++;
-      //std::cout << pubexp << "*" << *exp << " % " << *mod << " = " << tmp << std::endl;
    }
    *mod = p*q;
    return 0;
 }
 
 int encrypt(long int* in, long int exp, long int mod, long int* out)
+//Encrypt an array of long ints
+//exp and mod should be the public key pair
+//Each number, c, is encrypted by 
+// c' = (c^exp)%mod
 {
    //Note: pc is a pointer
    for (long int *pc = in; *pc != '\0';pc++,out++)
    {
       long int c = *pc;
-      //std::cout << "c = " <<  c << std::endl;
       for (int z=1;z<exp;z++)
       {
          c *= *pc;
-         c %= mod; 
+         c %= mod; //We can exploit the fact that (a*b)%c = ((a%c)*b)%c
+                   //   to keep the numbers from getting too large
       }
-      //std::cout << "c^exp = " <<  c << std::endl;
-      //std::cout << "out = " <<  c << std::endl;
       *out = c; 
    }
-   *out='\0';
+   *out='\0'; //Terminate with a zero
    return 0;
 }
 
 int decrypt(long int* in, long int exp, long int mod, long int* out)
+//Decrypt an array of long ints
+//exp and mod should be the private key pair
+//Each number, c', is decrypted by 
+// c = (c'^exp)%mod
 {
    for (long int *pc = in; *pc != '\0';pc++,out++)
    {
@@ -133,35 +150,41 @@ int decrypt(long int* in, long int exp, long int mod, long int* out)
       for (int z=1;z<exp;z++)
       {
          c *= *pc;
-         c %= mod; 
+         c %= mod; //We can exploit the fact that (a*b)%c = ((a%c)*b)%c
+                   //   to keep the numbers from getting too large
       }
-      //std::cout << "c^exp = " <<  c << std::endl;
-      //std::cout << "out = " << c << std::endl;
       *out = c; 
    }
-   *out='\0';
+   *out='\0'; //Terminate with a zero
    return 0;
 }
 
 
 
 long int gcd(long int p, long int q) 
-//greatest common factor by Euclid's method
+//greatest common devisor (AKA greatest common factor)
+// by Euclid's method
 {
    if (p<q) {long int tmp=p;p=q;q=tmp;}
    while (q!=0)
    {
-      //std::cout << p << " % " << q << " = " << p%q << std::endl;
+      //In each step the new p is the old q and the new q is p%q
+      //     p <- q
+      //     q <- p%q
+      //The last modular remainder will be 0.
+      //The next to last modular remainder is the GCD.
       long int tmp = q;
       q = p%q;
       p = tmp;
    }
 
-   //std::cout << "gcd = " << p << std::endl; 
    return p;
 }
 
 int long2char(long int* in, char* out)
+//Converts a list of long ints to char 
+//Using automatic type conversion
+//Useful for outputting to stdout
 {
    while(*in != 0) *out++ = (char)(*in++);
    *out = '\0';
@@ -169,6 +192,9 @@ int long2char(long int* in, char* out)
 }
 
 int char2long(char* in, long int* out)
+//Converts a list of chars to long ints
+//Using automatic type conversion
+//Useful for converting input from stdin
 {
    while(*in != '\0') *out++ = (long int)(*in++);
    *out = 0;
