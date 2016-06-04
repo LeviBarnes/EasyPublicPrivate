@@ -4,7 +4,7 @@
 #include <iostream>
 #include <string.h>
 
-#define MAX_STR_LEN 1000
+#define MAX_STR_LEN 10000
 
 long int prime(long int);
 long int gcd(long int p, long int q);

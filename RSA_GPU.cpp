@@ -2,9 +2,10 @@
 #include <math.h>
 #include <limits.h>
 #include <iostream>
+#include <fstream>
 #include <string.h>
 
-#define MAX_STR_LEN 1000
+#define MAX_STR_LEN 10000
 
 long int prime(long int);
 long int gcd(long int p, long int q);
@@ -17,30 +18,38 @@ int long2char(long int* in, char* out, bool subtract_pairs=false);
 
 long int fastexp(long int base, long int exp, long int mod);
 
-int main(void) {
+//These additional arguments to main allow the user to supply a file name 
+//  from the command line
+int main(int argc, char** argv) {
 
    long int p,q, pube, pubmod, prive, privmod;
    char inmsg[MAX_STR_LEN];
-   long int inmsg_l[MAX_STR_LEN];
+   long int inmsg_l[MAX_STR_LEN*2];
    char outmsg[MAX_STR_LEN];
-   long int outmsg_l[MAX_STR_LEN];
+   long int outmsg_l[MAX_STR_LEN*2];
    char decrmsg[MAX_STR_LEN];
-   long int decrmsg_l[MAX_STR_LEN];
+   long int decrmsg_l[MAX_STR_LEN*2];
 
    size_t len;
+
+   //myin will take input from a file if specified on the command line and 
+   //  from keyboard input (or piped input) if no file is specified
+   std::istream* myin;
+   if (0==argc) myin = &std::cin;
+   else myin = new std::ifstream(argv[1]);
 
    //Get inputs
    // - two prime numbers
    // - a message to be encrypted
    std::cout << "ENTER A PRIME NUMBER" << std::endl;
-   std::cin >> p;
+   *myin >> p;
    if (prime(p)) 
    {
       std::cerr << p << " is not prime." << std::endl;
       return 1;
    }
    std::cout << "ENTER ANOTHER PRIME NUMBER" << std::endl;
-   std::cin >> q;
+   *myin >> q;
    if (prime(q)) 
    {
       std::cerr << q << " is not prime." << std::endl;
@@ -48,8 +57,8 @@ int main(void) {
    }
 
    std::cout << "ENTER A MESSAGE (up to MAX_STR_LEN characters)." << std::endl;
-   std::cin.ignore(INT_MAX,'\n');
-   std::cin.getline(inmsg, MAX_STR_LEN);
+   myin->ignore(INT_MAX,'\n');
+   myin->getline(inmsg, MAX_STR_LEN);
    std:: cout << inmsg << std::endl;
    len = strlen(inmsg);
 

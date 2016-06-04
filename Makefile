@@ -8,6 +8,11 @@ else
 	CXX = g++
 endif
 
+ifeq ($(CUDA),1)
+	CFLAGS += -x cu -arch=sm_35  -D__CUDA
+	CXX = nvcc
+endif
 
-PublicPrivate: RSA_GPU.cpp
-	$(CXX) $(CFLAGS) -o PublicPrivate RSA_GPU.cpp
+
+PublicPrivate: RSA_CUDA.cpp
+	$(CXX) $(CFLAGS) -o PublicPrivate RSA_CUDA.cpp
