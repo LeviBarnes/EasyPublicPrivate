@@ -1,9 +1,10 @@
-#include <stdlib.h>
-#include <math.h>
-#include <limits.h>
-#include <iostream>
-#include <fstream>
-#include <string.h>
+#include <stdlib.h> //for rand
+#include <math.h>  //for sqrt
+#include <limits.h> //for INT_MAX
+#include <iostream> //std::cout and std::cin
+#include <fstream> //for file input
+#include <string.h> //for strlen
+#include <time.h> //for clock
 
 #define MAX_STR_LEN 10000
 #define BLOCKWID 128
@@ -33,11 +34,20 @@ int main(int argc, char** argv) {
 
    size_t len;
 
+   clock_t encrypt_time, decrypt_time, keygen_time;
+
    //myin will take input from a file if specified on the command line and 
    //  from keyboard input (or piped input) if no file is specified
    std::istream* myin;
    if (0==argc) myin = &std::cin;
    else myin = new std::ifstream(argv[1]);
+ 
+   #ifdef __CUDA
+   //Wake up the GPU
+   long int *dp;
+   cudaMalloc(&dp, sizeof(long int));
+   cudaFree(dp);
+   #endif
 
    //Get inputs
    // - two prime numbers
@@ -57,17 +67,20 @@ int main(int argc, char** argv) {
       return 1;
    }
 
-   std::cout << "ENTER A MESSAGE (up to MAX_STR_LEN characters)." << std::endl;
+   std::cout << "ENTER A MESSAGE (up to " << MAX_STR_LEN << " characters)." << std::endl;
    myin->ignore(INT_MAX,'\n');
    myin->getline(inmsg, MAX_STR_LEN);
    std:: cout << inmsg << std::endl;
    len = strlen(inmsg);
 
+   
    //Generate public and private keys from p and q
+   clock_t start = clock();
    publickey(p,q,&pube,&pubmod);
    std::cout << "public key: " << pube << ", " << pubmod << std::endl;
    privatekey(p,q,pube,&prive,&privmod);
    std::cout << "private key: " << prive << ", " << privmod << std::endl;
+   keygen_time = clock() - start;
 
    //Encrypt, then decrypt the message
    std::cout << "Original text: " << inmsg << std::endl;
@@ -76,15 +89,23 @@ int main(int argc, char** argv) {
 
        //Encrypt
    
+   start = clock();
    encrypt(inmsg_l, pube, pubmod, outmsg_l, len*2);
+   encrypt_time = clock() - start;
    long2char(outmsg_l, outmsg,true);
    std::cout << "Encrypted text: " << outmsg << std::endl;
 
 
        //Decrypt
+   start = clock();
    decrypt(outmsg_l, prive, privmod, decrmsg_l, len*2);
+   decrypt_time = clock() - start;
+   
    long2char(decrmsg_l, decrmsg,true);
    std::cout << "Decrypted text: " << decrmsg << std::endl;
+   std::cout << "Key generation time: " << keygen_time << std::endl;
+   std::cout << "Encrypt time: " << encrypt_time << std::endl;
+   std::cout << "Decrypt time: " << decrypt_time << std::endl;
 }
 
 
@@ -222,12 +243,13 @@ int encrypt(long int* in, long int exp, long int mod, long int* out, size_t len)
    cudaMemcpy(d_inout, in, sizeof(long int)*len, cudaMemcpyHostToDevice); //copy to GPU
 
    //Launch the kernel on the GPU with 1024 threads arranged in blocks of size BLOCKWID
-   decrypt_kernel<<<1024/BLOCKWID, BLOCKWID>>> (d_inout, exp, mod, len);
+   decrypt_kernel<<<(1024*128+BLOCKWID-1)/BLOCKWID, BLOCKWID>>> (d_inout, exp, mod, len);
 
    //copy data back from GPU
    cudaMemcpy(out, d_inout, sizeof(long int)*len, cudaMemcpyDeviceToHost); //copy from GPU
 
    out[len]=0; //Terminate with a zero
+   cudaFree(d_inout);
    return 0;
 }
 int decrypt(long int* in, long int exp, long int mod, long int* out, size_t len)
@@ -244,12 +266,13 @@ int decrypt(long int* in, long int exp, long int mod, long int* out, size_t len)
    cudaMemcpy(d_inout, in, sizeof(long int)*len, cudaMemcpyHostToDevice); //copy to GPU
 
    //Launch the kernel on the GPU with 1024 threads arranged in blocks of size BLOCKWID
-   decrypt_kernel<<<1024/BLOCKWID, BLOCKWID>>> (d_inout, exp, mod, len);
+   decrypt_kernel<<<(1024*128+BLOCKWID-1)/BLOCKWID, BLOCKWID>>> (d_inout, exp, mod, len);
 
    //copy data back from GPU
    cudaMemcpy(out, d_inout, sizeof(long int)*len, cudaMemcpyDeviceToHost); //copy from GPU
 
    out[len]=0; //Terminate with a zero
+   cudaFree(d_inout);
    return 0;
 }
 #endif
