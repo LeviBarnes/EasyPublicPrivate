@@ -20,16 +20,23 @@ Decryption can take a very long time with this simple implementation. You can ru
 **Multiple Versions**
 
 Multiple versions of the code are provided to give insight into speeding up encryption/decryption. Below are short descriptions of each version
-RSA.cpp i         - Simplest implementation
+RSA.cpp           - Simplest implementation
+
 RSA_omp.cpp       - Adds OpenMP directives to use all processor cores.
                     Set OMP_NUM_THREADS appropriately or leave it undefined
                     to use all cores
+
 RSA_fastexp.cpp   - Faster exponetiation for vastly improved performance.
                     The change is described in the comment preceeding the
                     fastexp() function
+
 RSA_randomsalt.cpp- Splits each character into two long ints, one random
                     integer and the character plus that integer. Before
                     this change, each letter always translated to the same
                     number during encryption
+
 RSA_GPU.cpp       - Adds directives for GPU acceleration using OpenACC. 
                     Requires PGI compilers. http://www.pgroup.com
+
+RSA_CUDA.cpp      - Accesses a GPU using CUDA. Requires nvidia toolkit.
+                    https://developer.nvidia.com/cuda-downloads
