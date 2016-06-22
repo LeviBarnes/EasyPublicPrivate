@@ -1,3 +1,11 @@
+/* Copyright (C) 2016 Levi Barnes - All Rights Reserved
+ * You may use, distribute and modify this code under the
+ * terms of the Apache license, version 2.0, 2004.
+ *
+ * You should have received a copy of the Apache 2.0 license with
+ * this file. If not, please write to: levi.barnes@gmail.com.
+ */
+ 
 #include <stdlib.h>
 #include <math.h>
 #include <limits.h>
